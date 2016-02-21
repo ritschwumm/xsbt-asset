@@ -1,0 +1,15 @@
+Asset pipeline plugin for sbt
+
+To build this code, get and install SBT from
+    https://github.com/sbt/sbt
+
+Get and install these plugins before building:
+    https://github.com/ritschwumm/xsbt-util
+
+Build and publish the plugin:
+    git clone git@github.com:ritschwumm/xsbt-asset.git
+    cd xsbt-asset
+    sbt publish-local
+
+Add the plugin to your project in project/plugins.sbt:
+    addSbtPlugin("de.djini" % "xsbt-asset" % <version>)
