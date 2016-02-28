@@ -10,9 +10,9 @@ object Import {
 	type AssetProcessor		= xsbtAsset.AssetProcessor
 	val AssetProcessor		= xsbtAsset.AssetProcessors
 	
-	val assetProcess		= taskKey[Seq[PathMapping]]("process staged assets")
-	val assetPipeline		= settingKey[Seq[TaskKey[AssetProcessor]]]("pipeline applied to staged assets")
+	val asset				= taskKey[Seq[PathMapping]]("complete build, returns the created processed assets")
 	val assetProcessors		= taskKey[Seq[AssetProcessor]]("processors applied to staged assets")
+	val assetPipeline		= settingKey[Seq[TaskKey[AssetProcessor]]]("pipeline applied to staged assets")
 	
 	val assetStage			= taskKey[Seq[PathMapping]]("stage assets for processing")
 	
@@ -22,6 +22,8 @@ object Import {
 	val assetExplode		= taskKey[Seq[PathMapping]]("explode libraries for processing")
 	val assetDependencies	= taskKey[Seq[File]]("additional content libraries as dependencies")
 	val assetExplodeDir		= settingKey[File]("a place to unpack dependencies")
+	
+	val assetResourcePrefix	= settingKey[Option[String]]("whether and where to put assets in managed resources")
 }
 
 object AssetPlugin extends AutoPlugin {
@@ -44,9 +46,9 @@ object AssetPlugin extends AutoPlugin {
 	
 	override lazy val projectSettings:Seq[Def.Setting[_]]	=
 			Vector(
-				assetProcess		:= (assetProcessors.value foldLeft assetStage.value) { (inputs, processor) => processor(inputs) },
-				assetPipeline		:= Vector.empty,
+				asset				:= (assetProcessors.value foldLeft assetStage.value) { (inputs, processor) => processor(inputs) },
 				assetProcessors		<<= xu.task chain assetPipeline,
+				assetPipeline		:= Vector.empty,
 				
 				assetStage			:= assetExplode.value ++ assetSourceFiles.value.toVector,
 				
@@ -62,6 +64,17 @@ object AssetPlugin extends AutoPlugin {
 				assetDependencies	:= Keys.update.value select configurationFilter(name = assetConfig.name),
 				assetExplodeDir		:= Keys.target.value / "asset",
 			
+				assetResourcePrefix	:= None,
+				(Keys.resourceGenerators in Compile)	<+=
+						Def.task {
+							resourceTask(
+								streams			= Keys.streams.value,
+								resourcePrefix	= assetResourcePrefix.value,
+								resourceManaged	= (Keys.resourceManaged in Compile).value,
+								assets			= asset.value
+							)
+						},
+						
 				// Keys.ivyConfigurations	+= assetConfig,
 				Keys.watchSources	:= Keys.watchSources.value ++ (assetSourceFiles.value map xu.pathMapping.getFile)//,
 			)
@@ -87,5 +100,24 @@ object AssetPlugin extends AutoPlugin {
 		val explodedFiles	= (exploded map { xu.pathMapping.getFile }).toSet
 		xu.file cleanupDir (explodeDir, explodedFiles)
 		exploded
+	}
+	
+	/** copy assets into the classpath */
+	private def resourceTask(
+		streams:TaskStreams,
+		resourcePrefix:Option[String],
+		resourceManaged:File,
+		assets:Seq[PathMapping]
+	):Seq[File]	= {
+		resourcePrefix match {
+			case Some(relative)	=>
+				val pubDir	= resourceManaged / relative
+				streams.log info s"copying assets to ${pubDir}"
+				
+				val assetsCopied	= xu.file mirror (pubDir, assets)
+				(assetsCopied map xu.fileMapping.getTarget).toVector
+			case None	=>
+				Vector.empty
+		}
 	}
 }
