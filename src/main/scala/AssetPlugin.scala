@@ -24,6 +24,7 @@ object Import {
 	val assetExplodeDir		= settingKey[File]("a place to unpack dependencies")
 	
 	val assetResourcePrefix	= settingKey[Option[String]]("whether and where to put assets in managed resources")
+	val assetResourceDir	= settingKey[File]("additional managed resource dir")
 }
 
 object AssetPlugin extends AutoPlugin {
@@ -62,18 +63,21 @@ object AssetPlugin extends AutoPlugin {
 							explodeDir		= assetExplodeDir.value
 						),
 				assetDependencies	:= Keys.update.value select configurationFilter(name = assetConfig.name),
-				assetExplodeDir		:= Keys.target.value / "asset",
+				assetExplodeDir		:= Keys.target.value / "asset" / "explode",
 			
 				assetResourcePrefix	:= None,
+				assetResourceDir	:= Keys.target.value / "asset" / "resource",
 				(Keys.resourceGenerators in Compile)	<+=
 						Def.task {
 							resourceTask(
 								streams			= Keys.streams.value,
+								resourceDir		= assetResourceDir.value,
 								resourcePrefix	= assetResourcePrefix.value,
-								resourceManaged	= (Keys.resourceManaged in Compile).value,
 								assets			= asset.value
 							)
 						},
+				// can't just go into resourceManaged or it would be flattened
+				(Keys.managedResourceDirectories in Compile)	<+= assetResourceDir,
 						
 				// Keys.ivyConfigurations	+= assetConfig,
 				Keys.watchSources	:= Keys.watchSources.value ++ (assetSourceFiles.value map xu.pathMapping.getFile)//,
@@ -105,13 +109,13 @@ object AssetPlugin extends AutoPlugin {
 	/** copy assets into the classpath */
 	private def resourceTask(
 		streams:TaskStreams,
+		resourceDir:File,
 		resourcePrefix:Option[String],
-		resourceManaged:File,
 		assets:Seq[PathMapping]
 	):Seq[File]	= {
 		resourcePrefix match {
 			case Some(relative)	=>
-				val pubDir	= resourceManaged / relative
+				val pubDir	= resourceDir / relative
 				streams.log info s"copying assets to ${pubDir}"
 				
 				val assetsCopied	= xu.file mirror (pubDir, assets)
