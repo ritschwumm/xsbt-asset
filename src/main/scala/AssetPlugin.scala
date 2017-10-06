@@ -12,7 +12,7 @@ object Import {
 	
 	val asset				= taskKey[Seq[PathMapping]]("complete build, returns the created processed assets")
 	val assetProcessors		= taskKey[Seq[AssetProcessor]]("processors applied to staged assets")
-	val assetPipeline		= settingKey[Seq[TaskKey[AssetProcessor]]]("pipeline applied to staged assets")
+	//val assetPipeline		= settingKey[Seq[TaskKey[AssetProcessor]]]("pipeline applied to staged assets")
 	
 	val assetStage			= taskKey[Seq[PathMapping]]("stage assets for processing")
 	
@@ -48,8 +48,9 @@ object AssetPlugin extends AutoPlugin {
 	override lazy val projectSettings:Seq[Def.Setting[_]]	=
 			Vector(
 				asset				:= (assetProcessors.value foldLeft assetStage.value) { (inputs, processor) => processor(inputs) },
-				assetProcessors		<<= xu.task chain assetPipeline,
-				assetPipeline		:= Vector.empty,
+				assetProcessors		:= Vector.empty,
+				//assetProcessors		:= (xu.task chain assetPipeline).value,
+				//assetPipeline		:= Vector.empty,
 				
 				assetStage			:= assetExplode.value ++ assetSourceFiles.value.toVector,
 				
@@ -67,17 +68,18 @@ object AssetPlugin extends AutoPlugin {
 			
 				assetResourcePrefix	:= None,
 				assetResourceDir	:= Keys.target.value / "asset" / "resource",
-				(Keys.resourceGenerators in Compile)	<+=
-						Def.task {
-							resourceTask(
-								streams			= Keys.streams.value,
-								resourceDir		= assetResourceDir.value,
-								resourcePrefix	= assetResourcePrefix.value,
-								assets			= asset.value
-							)
-						},
+				(Keys.resourceGenerators in Compile)	+=
+						(Def.task {
+								resourceTask(
+									streams			= Keys.streams.value,
+									resourceDir		= assetResourceDir.value,
+									resourcePrefix	= assetResourcePrefix.value,
+									assets			= asset.value
+								)
+						})
+						.taskValue,
 				// can't just go into resourceManaged or it would be flattened
-				(Keys.managedResourceDirectories in Compile)	<+= assetResourceDir,
+				(Keys.managedResourceDirectories in Compile)	+= assetResourceDir.value,
 						
 				// Keys.ivyConfigurations	+= assetConfig,
 				Keys.watchSources	:= Keys.watchSources.value ++ (assetSourceFiles.value map xu.pathMapping.getFile)//,
