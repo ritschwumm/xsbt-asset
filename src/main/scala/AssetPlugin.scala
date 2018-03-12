@@ -82,7 +82,7 @@ object AssetPlugin extends AutoPlugin {
 				(Keys.managedResourceDirectories in Compile)	+= assetResourceDir.value,
 						
 				// Keys.ivyConfigurations	+= assetConfig,
-				Keys.watchSources	:= Keys.watchSources.value ++ (assetSourceFiles.value map xu.pathMapping.getFile)//,
+				Keys.watchSources	:= Keys.watchSources.value :+ Watched.WatchSource(assetSourceDir.value)
 			)
 
 	//------------------------------------------------------------------------------
