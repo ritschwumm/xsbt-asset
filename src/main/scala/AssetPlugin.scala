@@ -28,7 +28,7 @@ object Import {
 }
 
 object AssetPlugin extends AutoPlugin {
-	val assetConfig		= config("asset").hide
+	val Asset		= config("asset").hide
 	
 	//------------------------------------------------------------------------------
 	//## exports
@@ -42,7 +42,7 @@ object AssetPlugin extends AutoPlugin {
 	
 	override lazy val projectConfigurations:Seq[Configuration]	=
 			Vector(
-				assetConfig
+				Asset
 			)
 	
 	override lazy val projectSettings:Seq[Def.Setting[_]]	=
@@ -63,7 +63,7 @@ object AssetPlugin extends AutoPlugin {
 							dependencies	= assetDependencies.value,
 							explodeDir		= assetExplodeDir.value
 						),
-				assetDependencies	:= Keys.update.value select configurationFilter(name = assetConfig.name),
+				assetDependencies	:= Keys.update.value select configurationFilter(name = Asset.name),
 				assetExplodeDir		:= Keys.target.value / "asset" / "explode",
 			
 				assetResourcePrefix	:= None,
@@ -81,7 +81,7 @@ object AssetPlugin extends AutoPlugin {
 				// can't just go into resourceManaged or it would be flattened
 				(Keys.managedResourceDirectories in Compile)	+= assetResourceDir.value,
 						
-				// Keys.ivyConfigurations	+= assetConfig,
+				// Keys.ivyConfigurations	+= Asset,
 				Keys.watchSources	:= Keys.watchSources.value :+ Watched.WatchSource(assetSourceDir.value)
 			)
 
