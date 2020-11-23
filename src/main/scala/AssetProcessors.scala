@@ -11,17 +11,17 @@ import xsbtUtil.{ util => xu }
 // after retrying
 object AssetProcessors {
 	def selective(filter:FileFilter)(delegate:AssetProcessor):AssetProcessor	=
-			input => {
-				val (accept, reject)	= input partition (xu.pathMapping.getFile andThen filter.accept)
-				delegate(accept) ++ reject
-			}
+		input => {
+			val (accept, reject)	= input partition (xu.pathMapping.getFile andThen filter.accept)
+			delegate(accept) ++ reject
+		}
 
 	def filtering(filter:FileFilter):AssetProcessor	=
-			_ filter (xu.pathMapping.getFile andThen filter.accept)
+		_ filter (xu.pathMapping.getFile andThen filter.accept)
 
 	val dirless:AssetProcessor	=
-			filtering(-DirectoryFilter)
+		filtering(-DirectoryFilter)
 
 	val empty:AssetProcessor	=
-			identity
+		identity
 }

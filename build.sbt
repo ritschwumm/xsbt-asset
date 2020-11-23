@@ -2,21 +2,14 @@ sbtPlugin		:= true
 
 name			:= "xsbt-asset"
 organization	:= "de.djini"
-version			:= "1.4.0"
+version			:= "1.5.0"
 
 scalacOptions	++= Seq(
+	"-feature",
 	"-deprecation",
 	"-unchecked",
-	// "-language:implicitConversions",
-	// "-language:existentials",
-	// "-language:higherKinds",
-	// "-language:reflectiveCalls",
-	// "-language:dynamics",
-	// "-language:postfixOps",
-	// "-language:experimental.macros"
-	"-feature",
-	"-Xfatal-warnings"
+	"-Xfatal-warnings",
 )
 
-conflictManager	:= ConflictManager.strict
-addSbtPlugin("de.djini" % "xsbt-util"		% "1.4.0")
+conflictManager	:= ConflictManager.strict withOrganization "^(?!(org\\.scala-lang|org\\.scala-js|org\\.scala-sbt)(\\..*)?)$"
+addSbtPlugin("de.djini" % "xsbt-util"		% "1.5.0")

@@ -46,44 +46,44 @@ object AssetPlugin extends AutoPlugin {
 			)
 
 	override lazy val projectSettings:Seq[Def.Setting[_]]	=
-			Vector(
-				asset				:= (assetProcessors.value foldLeft assetStage.value) { (inputs, processor) => processor(inputs) },
-				assetProcessors		:= Vector.empty,
-				//assetProcessors		:= (xu.task chain assetPipeline).value,
-				//assetPipeline		:= Vector.empty,
+		Vector(
+			asset				:= (assetProcessors.value foldLeft assetStage.value) { (inputs, processor) => processor(inputs) },
+			assetProcessors		:= Vector.empty,
+			//assetProcessors		:= (xu.task chain assetPipeline).value,
+			//assetPipeline		:= Vector.empty,
 
-				assetStage			:= assetExplode.value ++ assetSourceFiles.value.toVector,
+			assetStage			:= assetExplode.value ++ assetSourceFiles.value.toVector,
 
-				assetSourceDir		:= (Keys.sourceDirectory in Compile).value / "asset",
-				assetSourceFiles	:= xu.find allMapped assetSourceDir.value,
+			assetSourceDir		:= (Keys.sourceDirectory in Compile).value / "asset",
+			assetSourceFiles	:= xu.find allMapped assetSourceDir.value,
 
-				assetExplode		:=
-						explodeTask(
+			assetExplode		:=
+				explodeTask(
+					streams			= Keys.streams.value,
+					dependencies	= assetDependencies.value,
+					explodeDir		= assetExplodeDir.value
+				),
+			assetDependencies	:= Keys.update.value select configurationFilter(name = Asset.name),
+			assetExplodeDir		:= Keys.target.value / "asset" / "explode",
+
+			assetResourcePrefix	:= None,
+			assetResourceDir	:= Keys.target.value / "asset" / "resource",
+			(Keys.resourceGenerators in Compile)	+=
+				(Def.task {
+						resourceTask(
 							streams			= Keys.streams.value,
-							dependencies	= assetDependencies.value,
-							explodeDir		= assetExplodeDir.value
-						),
-				assetDependencies	:= Keys.update.value select configurationFilter(name = Asset.name),
-				assetExplodeDir		:= Keys.target.value / "asset" / "explode",
+							resourceDir		= assetResourceDir.value,
+							resourcePrefix	= assetResourcePrefix.value,
+							assets			= asset.value
+						)
+				})
+				.taskValue,
+			// can't just go into resourceManaged or it would be flattened
+			(Keys.managedResourceDirectories in Compile)	+= assetResourceDir.value,
 
-				assetResourcePrefix	:= None,
-				assetResourceDir	:= Keys.target.value / "asset" / "resource",
-				(Keys.resourceGenerators in Compile)	+=
-						(Def.task {
-								resourceTask(
-									streams			= Keys.streams.value,
-									resourceDir		= assetResourceDir.value,
-									resourcePrefix	= assetResourcePrefix.value,
-									assets			= asset.value
-								)
-						})
-						.taskValue,
-				// can't just go into resourceManaged or it would be flattened
-				(Keys.managedResourceDirectories in Compile)	+= assetResourceDir.value,
-
-				// Keys.ivyConfigurations	+= Asset,
-				Keys.watchSources	:= Keys.watchSources.value :+ Watched.WatchSource(assetSourceDir.value)
-			)
+			// Keys.ivyConfigurations	+= Asset,
+			Keys.watchSources	:= Keys.watchSources.value :+ Watched.WatchSource(assetSourceDir.value)
+		)
 
 	//------------------------------------------------------------------------------
 	//## tasks
@@ -96,11 +96,11 @@ object AssetPlugin extends AutoPlugin {
 	):Seq[PathMapping]	= {
 		streams.log info s"extracting ${dependencies.size} asset libraries to ${explodeDir}"
 		val exploded	=
-				dependencies.toVector flatMap { dependency	=>
-					val out	= explodeDir / dependency.getName
-					IO unzip (dependency, out, -xu.filter.JarManifestFilter)
-					xu.find allMapped out
-				}
+			dependencies.toVector flatMap { dependency	=>
+				val out	= explodeDir / dependency.getName
+				IO unzip (dependency, out, -xu.filter.JarManifestFilter)
+				xu.find allMapped out
+			}
 
 		streams.log info s"cleaning up ${explodeDir}"
 		val explodedFiles	= (exploded map { xu.pathMapping.getFile }).toSet
