@@ -41,9 +41,9 @@ object AssetPlugin extends AutoPlugin {
 	override val trigger:PluginTrigger	= noTrigger
 
 	override lazy val projectConfigurations:Seq[Configuration]	=
-			Vector(
-				Asset
-			)
+		Vector(
+			Asset
+		)
 
 	override lazy val projectSettings:Seq[Def.Setting[_]]	=
 		Vector(
@@ -54,7 +54,7 @@ object AssetPlugin extends AutoPlugin {
 
 			assetStage			:= assetExplode.value ++ assetSourceFiles.value.toVector,
 
-			assetSourceDir		:= (Keys.sourceDirectory in Compile).value / "asset",
+			assetSourceDir		:= (Compile / Keys.sourceDirectory).value / "asset",
 			assetSourceFiles	:= xu.find allMapped assetSourceDir.value,
 
 			assetExplode		:=
@@ -68,18 +68,18 @@ object AssetPlugin extends AutoPlugin {
 
 			assetResourcePrefix	:= None,
 			assetResourceDir	:= Keys.target.value / "asset" / "resource",
-			(Keys.resourceGenerators in Compile)	+=
+			(Compile / Keys.resourceGenerators)	+=
 				(Def.task {
-						resourceTask(
-							streams			= Keys.streams.value,
-							resourceDir		= assetResourceDir.value,
-							resourcePrefix	= assetResourcePrefix.value,
-							assets			= asset.value
-						)
+					resourceTask(
+						streams			= Keys.streams.value,
+						resourceDir		= assetResourceDir.value,
+						resourcePrefix	= assetResourcePrefix.value,
+						assets			= asset.value
+					)
 				})
 				.taskValue,
 			// can't just go into resourceManaged or it would be flattened
-			(Keys.managedResourceDirectories in Compile)	+= assetResourceDir.value,
+			(Compile / Keys.managedResourceDirectories)	+= assetResourceDir.value,
 
 			// Keys.ivyConfigurations	+= Asset,
 			Keys.watchSources	:= Keys.watchSources.value :+ Watched.WatchSource(assetSourceDir.value)
